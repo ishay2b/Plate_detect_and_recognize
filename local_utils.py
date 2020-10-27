@@ -141,6 +141,11 @@ def reconstruct(I, Iresized, Yr, lp_threshold):
     labels = []
     labels_frontal = []
 
+    TLp = []
+    Cor = []
+
+    out_size, lp_type = one_line, 1  # Default values to return
+
     for i in range(len(xx)):
         x, y = xx[i], yy[i]
         affine = Affines[x, y]
@@ -170,22 +175,20 @@ def reconstruct(I, Iresized, Yr, lp_threshold):
     final_labels_frontal = nms(labels_frontal, 0.1)
 
     #print(final_labels_frontal)
-    assert final_labels_frontal, "No License plate is founded!"
+    if len(final_labels_frontal) > 0:
+        # LP size and type
+        out_size, lp_type = (two_lines, 2) if ((final_labels_frontal[0].wh()[0] / final_labels_frontal[0].wh()[1]) < 1.7) else (one_line, 1)
 
-    # LP size and type
-    out_size, lp_type = (two_lines, 2) if ((final_labels_frontal[0].wh()[0] / final_labels_frontal[0].wh()[1]) < 1.7) else (one_line, 1)
 
-    TLp = []
-    Cor = []
-    if len(final_labels):
-        final_labels.sort(key=lambda x: x.prob(), reverse=True)
-        for _, label in enumerate(final_labels):
-            t_ptsh = getRectPts(0, 0, out_size[0], out_size[1])
-            ptsh = np.concatenate((label.pts * getWH(I.shape).reshape((2, 1)), np.ones((1, 4))))
-            H = find_T_matrix(ptsh, t_ptsh)
-            Ilp = cv2.warpPerspective(I, H, out_size, borderValue=0)
-            TLp.append(Ilp)
-            Cor.append(ptsh)
+        if len(final_labels):
+            final_labels.sort(key=lambda x: x.prob(), reverse=True)
+            for _, label in enumerate(final_labels):
+                t_ptsh = getRectPts(0, 0, out_size[0], out_size[1])
+                ptsh = np.concatenate((label.pts * getWH(I.shape).reshape((2, 1)), np.ones((1, 4))))
+                H = find_T_matrix(ptsh, t_ptsh)
+                Ilp = cv2.warpPerspective(I, H, out_size, borderValue=0)
+                TLp.append(Ilp)
+                Cor.append(ptsh)
     return final_labels, TLp, lp_type, Cor
 
 def detect_lp(model, I, max_dim, lp_threshold):

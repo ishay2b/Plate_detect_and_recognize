@@ -1,3 +1,8 @@
 /__pycache__
 /.ipynb_checkpoints
 /Not use
+v3.6/
+.DS_Store
+/.python-version/
+.vscode/
+.python-version
